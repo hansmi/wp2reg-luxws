@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
+	"net/url"
 	"regexp"
 	"sort"
 	"strings"
@@ -13,6 +15,7 @@ import (
 	"github.com/hansmi/wp2reg-luxws/luxwsclient"
 	"github.com/hansmi/wp2reg-luxws/luxwslang"
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 )
 
@@ -30,6 +33,7 @@ type contentCollectFunc func(chan<- prometheus.Metric, *luxwsclient.ContentRoot)
 type collector struct {
 	sem                   *semaphore.Weighted
 	address               string
+	httpAddress           string
 	loc                   *time.Location
 	terms                 *luxwslang.Terminology
 	upDesc                *prometheus.Desc
@@ -44,11 +48,13 @@ type collector struct {
 	suppliedHeatDesc      *prometheus.Desc
 	latestErrorDesc       *prometheus.Desc
 	switchOffDesc         *prometheus.Desc
+	nodeTimeDesc          *prometheus.Desc
 }
 
 type collectorOpts struct {
 	maxConcurrent int64
 	address       string
+	httpAddress   string
 	loc           *time.Location
 	terms         *luxwslang.Terminology
 }
@@ -61,6 +67,7 @@ func newCollector(opts collectorOpts) *collector {
 	return &collector{
 		sem:                   semaphore.NewWeighted(opts.maxConcurrent),
 		address:               opts.address,
+		httpAddress:           opts.httpAddress,
 		loc:                   opts.loc,
 		terms:                 opts.terms,
 		upDesc:                prometheus.NewDesc("luxws_up", "Whether scrape was successful", []string{"status"}, nil),
@@ -75,6 +82,7 @@ func newCollector(opts collectorOpts) *collector {
 		suppliedHeatDesc:      prometheus.NewDesc("luxws_supplied_heat", "Supplied heat", []string{"name", "unit"}, nil),
 		latestErrorDesc:       prometheus.NewDesc("luxws_latest_error", "Latest error", []string{"reason"}, nil),
 		switchOffDesc:         prometheus.NewDesc("luxws_latest_switchoff", "Latest switch-off", []string{"reason"}, nil),
+		nodeTimeDesc:          prometheus.NewDesc("luxws_node_time_seconds", "System time in seconds since epoch (1970)", nil, nil),
 	}
 }
 
@@ -91,6 +99,7 @@ func (c *collector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.suppliedHeatDesc
 	ch <- c.latestErrorDesc
 	ch <- c.switchOffDesc
+	ch <- c.nodeTimeDesc
 }
 
 func (c *collector) parseValue(text string) (float64, string, error) {
@@ -283,14 +292,7 @@ func (c *collector) collectLatestSwitchOff(ch chan<- prometheus.Metric, content 
 	return c.collectTimetable(ch, c.switchOffDesc, content, c.terms.NavSwitchOffs)
 }
 
-func (c *collector) collect(ctx context.Context, ch chan<- prometheus.Metric) error {
-	// Limit concurrent collections
-	if err := c.sem.Acquire(ctx, 1); err != nil {
-		return err
-	}
-
-	defer c.sem.Release(1)
-
+func (c *collector) collectWebSocket(ctx context.Context, ch chan<- prometheus.Metric) error {
 	cl, err := luxwsclient.Dial(ctx, c.address)
 	if err != nil {
 		return err
@@ -330,6 +332,70 @@ func (c *collector) collect(ctx context.Context, ch chan<- prometheus.Metric) er
 	}
 
 	return nil
+}
+
+func (c *collector) collectHTTP(ctx context.Context, ch chan<- prometheus.Metric) error {
+	url := url.URL{
+		Scheme: "http",
+		Host:   c.httpAddress,
+		Path:   "/",
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url.String(), nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		return err
+	}
+
+	if dateHeader := resp.Header.Get("Date"); dateHeader != "" {
+		ts, err := http.ParseTime(dateHeader)
+		if err != nil {
+			return err
+		}
+
+		ch <- prometheus.MustNewConstMetric(c.nodeTimeDesc, prometheus.GaugeValue,
+			float64(ts.Unix()))
+	} else {
+		return errors.New("HTTP header missing server time")
+	}
+
+	return nil
+}
+
+func (c *collector) collect(ctx context.Context, ch chan<- prometheus.Metric) error {
+	// Limit concurrent collections
+	if err := c.sem.Acquire(ctx, 1); err != nil {
+		return err
+	}
+
+	defer c.sem.Release(1)
+
+	g, ctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		if err := c.collectWebSocket(ctx, ch); err != nil {
+			return fmt.Errorf("collection via LuxWS protocol failed: %w", err)
+		}
+
+		return nil
+	})
+
+	if c.httpAddress != "" {
+		g.Go(func() error {
+			if err := c.collectHTTP(ctx, ch); err != nil {
+				return fmt.Errorf("collection via HTTP protocol failed: %w", err)
+			}
+
+			return nil
+		})
+	}
+
+	return g.Wait()
 }
 
 func (c *collector) Collect(ch chan<- prometheus.Metric) {

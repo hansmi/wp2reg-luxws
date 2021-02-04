@@ -1,6 +1,10 @@
 package main
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -36,7 +40,7 @@ func (a *adapter) collectAndCompare(t *testing.T, want string) {
 	}
 }
 
-func TestCollect(t *testing.T) {
+func TestCollectWebSocketParts(t *testing.T) {
 	c := newCollector(collectorOpts{
 		terms: luxwslang.German,
 		loc:   time.UTC,
@@ -406,4 +410,58 @@ luxws_latest_switchoff{reason="bbb"} 1585954800
 			a.collectAndCompare(t, tc.want)
 		})
 	}
+}
+
+type httpAdapter struct {
+	t       *testing.T
+	c       *collector
+	collect func(ch chan<- prometheus.Metric)
+}
+
+func (a *httpAdapter) Describe(ch chan<- *prometheus.Desc) {
+	a.c.Describe(ch)
+}
+
+func (a *httpAdapter) Collect(ch chan<- prometheus.Metric) {
+	a.collect(ch)
+}
+
+func (a *httpAdapter) collectAndCompare(t *testing.T, want string) {
+	t.Helper()
+
+	if err := testutil.CollectAndCompare(a, strings.NewReader(want)); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestCollectHTTP(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Date", "Mon, 02 Jan 2006 15:04:05 GMT")
+	}))
+	t.Cleanup(server.Close)
+
+	c := newCollector(collectorOpts{
+		terms: luxwslang.German,
+		loc:   time.UTC,
+	})
+
+	if serverURL, err := url.Parse(server.URL); err != nil {
+		t.Error(err)
+	} else {
+		c.httpAddress = serverURL.Host
+	}
+
+	a := &httpAdapter{t, c, func(ch chan<- prometheus.Metric) {
+		if err := c.collectHTTP(ctx, ch); err != nil {
+			t.Errorf("Collection failed: %v", err)
+		}
+	}}
+	a.collectAndCompare(t, `
+# HELP luxws_node_time_seconds System time in seconds since epoch (1970)
+# TYPE luxws_node_time_seconds gauge
+luxws_node_time_seconds 1136214245
+`)
 }

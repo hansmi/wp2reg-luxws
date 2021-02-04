@@ -26,6 +26,8 @@ var timeout = flag.Duration("scrape-timeout", time.Minute, "Maximum duration for
 
 var target = flag.String("controller.address", "",
 	`host:port for controller Websocket service (e.g. "192.0.2.1:8214")`)
+var httpTarget = flag.String("controller.address.http", "",
+	`host:port for controller HTTP service; used to retrieve time (e.g. "192.0.2.1:80")`)
 var timezone = flag.String("controller.timezone", time.Local.String(),
 	"Timezone for parsing timestamps")
 var lang = flag.String("controller.language", "",
@@ -51,6 +53,7 @@ func main() {
 	opts := collectorOpts{
 		maxConcurrent: int64(*maxRequests),
 		address:       *target,
+		httpAddress:   *httpTarget,
 	}
 
 	if loc, err := time.LoadLocation(*timezone); err != nil {
