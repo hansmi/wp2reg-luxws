@@ -1,6 +1,6 @@
 # luxws-exporter
 
-A [Prometheus exporter][prometheus] using the `Lux_WS` protocol to retrieve
+A [Prometheus exporter][promexporter] using the `Lux_WS` protocol to retrieve
 informational values from Luxtronik 2.x heat pump controllers manufactured
 and/or deployed by the following companies:
 
