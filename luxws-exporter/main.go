@@ -96,7 +96,7 @@ func main() {
 
 	server := &http.Server{Addr: *listenAddress}
 
-	if err := web.Listen(server, *configFile, logger); err != nil {
+	if err := web.ListenAndServe(server, *configFile, logger); err != nil {
 		log.Fatal(err)
 	}
 }
