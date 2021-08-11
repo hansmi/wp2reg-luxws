@@ -1,0 +1,60 @@
+# Configuration for GoReleaser
+# https://goreleaser.com/
+
+project_name: wp2reg-luxws
+
+builds:
+  - main: ./luxws-exporter/
+    binary: luxws-exporter
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    ignore:
+      - goos: linux
+        goarch: arm64
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
+    flags:
+      - -trimpath
+
+nfpms:
+  - description: Prometheus exporter for heat pump controllers
+    maintainer: M. Hanselmann
+    bindir: /usr/bin
+    license: BSD-3-Clause
+    formats:
+      - deb
+      - rpm
+    contents:
+      - src: ./README.md
+        dst: /usr/share/doc/luxws-exporter/README.md
+      - src: ./LICENSE
+        dst: /usr/share/doc/luxws-exporter/LICENSE
+
+archives:
+  - format: tar.gz
+    wrap_in_directory: true
+    files:
+      - LICENSE
+      - README.md
+    format_overrides:
+      - goos: windows
+        format: zip
+
+release:
+  draft: true
+  prerelease: auto
+
+snapshot:
+  name_template: '{{ .Tag }}.snapshot{{ replace (replace .Date ":" "") "-" "" }}.g{{ .ShortCommit }}'
+
+# vim: set sw=2 sts=2 et :
