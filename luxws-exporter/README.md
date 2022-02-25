@@ -14,7 +14,7 @@ and/or deployed by the following companies:
 
 The exporter must know which language the controller interface is using. See
 the [`luxwslang` package](../luxwslang/) for implemented languages (includes
-English and German). Other languages are easily added by defining a few
+English, German and Dutch). Other languages are easily added by defining a few
 strings.
 
 

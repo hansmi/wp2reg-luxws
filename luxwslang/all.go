@@ -7,6 +7,7 @@ func All() (result []*Terminology) {
 	return append(result,
 		German,
 		English,
+		Dutch,
 	)
 }
 
