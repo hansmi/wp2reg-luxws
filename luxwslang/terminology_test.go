@@ -90,6 +90,8 @@ func TestParseDuration(t *testing.T) {
 		{terms: German, input: "-100h", want: "-100h"},
 		{terms: German, input: "  -23:1:2\n", want: "-23h1m2s"},
 		{terms: German, input: "-1:0:0", want: "-1h"},
+		{terms: German, input: "-100", want: "-100h"},
+		{terms: German, input: "123", want: "123h"},
 		{terms: German, input: "0:-1:0", wantErr: true},
 		{terms: German, input: "0:0:-1", wantErr: true},
 	} {

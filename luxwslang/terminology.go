@@ -59,6 +59,7 @@ func (*Terminology) ParseDuration(v string) (time.Duration, error) {
 	if n, err := fmt.Sscanf(v, "%d:%d:%d\n", &hours, &minutes, &seconds); err == nil && n == 3 {
 	} else if n, err := fmt.Sscanf(v, "%d:%d\n", &hours, &minutes); err == nil && n == 2 {
 	} else if n, err := fmt.Sscanf(v, "%dh\n", &hours); err == nil && n == 1 {
+	} else if n, err := fmt.Sscanf(v, "%d\n", &hours); err == nil && n == 1 {
 	} else {
 		return math.MinInt64, fmt.Errorf("unrecognized duration format %q: %w", v, err)
 	}
