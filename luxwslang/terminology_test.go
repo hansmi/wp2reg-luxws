@@ -142,6 +142,8 @@ func TestParseMeasurement(t *testing.T) {
 		{terms: English, input: "3600s", want: 3600, wantUnit: "s"},
 		{terms: English, input: "36 m³/h", want: 36, wantUnit: "m³/h"},
 		{terms: English, input: "18 min", want: 18 * 60, wantUnit: "s"},
+		{terms: Dutch, input: "--- l/h", want: 0, wantUnit: "l/h"},
+		{terms: English, input: "---rpm", want: 0, wantUnit: "rpm"},
 	} {
 		t.Run(tc.terms.ID+" "+tc.input, func(t *testing.T) {
 			got, gotUnit, err := tc.terms.ParseMeasurement(tc.input)
