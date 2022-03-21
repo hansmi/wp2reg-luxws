@@ -89,6 +89,16 @@ func (*Terminology) ParseMeasurement(text string) (float64, string, error) {
 			}
 		}
 
+		if !ok {
+			for _, format := range []string{"--- %s\n", "---%s\n"} {
+				if n, err := fmt.Sscanf(text, format, &unit); err == nil && n == 1 {
+					value = 0
+					ok = true
+					break
+				}
+			}
+		}
+
 		if ok {
 			switch unit {
 			case "K", "bar", "l/h", "kWh", "rpm", "V", "kW", "Hz", "mA", "s", "m³/h":
