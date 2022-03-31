@@ -253,7 +253,7 @@ func (c *collector) collectTimetable(ch chan<- prometheus.Metric, desc *promethe
 		reason := normalizeSpace(*item.Value)
 
 		// Use only the most recent timestamp per reason
-		if prev, ok := latest[reason]; !ok || prev.IsZero() || prev.Before(ts) {
+		if prev := latest[reason]; prev.IsZero() || prev.Before(ts) {
 			latest[reason] = ts
 		}
 	}
