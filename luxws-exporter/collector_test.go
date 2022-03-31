@@ -367,6 +367,27 @@ luxws_latest_error{reason="bbb"} 1396566000
 `,
 		},
 		{
+			name: "latest error with empty rows",
+			fn:   c.collectLatestError,
+			input: &luxwsclient.ContentRoot{
+				Items: []luxwsclient.ContentItem{
+					{
+						Name: "Fehlerspeicher",
+						Items: []luxwsclient.ContentItem{
+							{Name: "----", Value: luxwsclient.String("placeholder")},
+							{Name: "08.11.21 21:40:09", Value: luxwsclient.String("text")},
+							{Name: "----", Value: luxwsclient.String("----")},
+						},
+					},
+				},
+			},
+			want: `
+# HELP luxws_latest_error Latest error
+# TYPE luxws_latest_error gauge
+luxws_latest_error{reason="text"} 1636407609
+`,
+		},
+		{
 			name: "latest switch-off empty",
 			fn:   c.collectLatestSwitchOff,
 			input: &luxwsclient.ContentRoot{

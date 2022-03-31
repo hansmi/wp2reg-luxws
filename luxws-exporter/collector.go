@@ -241,11 +241,13 @@ func (c *collector) collectTimetable(ch chan<- prometheus.Metric, desc *promethe
 	latest := map[string]time.Time{}
 
 	for _, item := range group.Items {
-		if item.Value == nil {
+		tsRaw := normalizeSpace(item.Name)
+
+		if item.Value == nil || strings.Trim(tsRaw, "-") == "" {
 			continue
 		}
 
-		ts, err := c.terms.ParseTimestamp(item.Name, c.loc)
+		ts, err := c.terms.ParseTimestamp(tsRaw, c.loc)
 		if err != nil {
 			return err
 		}
