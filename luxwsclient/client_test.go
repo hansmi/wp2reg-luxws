@@ -66,7 +66,7 @@ func newTestClient(t *testing.T, handleRoundTrip func(string) (string, error)) *
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	t.Cleanup(cancel)
 
-	c, err := Dial(ctx, serverURL.Host)
+	c, err := Dial(ctx, serverURL.Host, WithLogFunc(t.Logf))
 	if err != nil {
 		t.Fatalf("Dial(%q) failed: %v", serverURL.Host, err)
 	}

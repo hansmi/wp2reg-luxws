@@ -53,9 +53,23 @@ type transport interface {
 	Close() error
 }
 
+// Option is the type of options for clients.
+type Option func(*Client)
+
+// LogFunc describes a logging function (e.g. log.Printf).
+type LogFunc func(format string, v ...interface{})
+
+// WithLogFunc supplies a logging function to the client.
+func WithLogFunc(logf LogFunc) Option {
+	return func(c *Client) {
+		c.logf = logf
+	}
+}
+
 // Client is a wrapper around an underlying LuxWS connection.
 type Client struct {
-	t transport
+	logf LogFunc
+	t    transport
 }
 
 // Dial connects to a LuxWS server. The address must have the format
@@ -63,15 +77,22 @@ type Client struct {
 // a timeout.
 //
 // IDs returned by the server are unique to each connection.
-func Dial(ctx context.Context, address string) (*Client, error) {
-	t, err := luxws.Dial(ctx, address)
-	if err != nil {
+func Dial(ctx context.Context, address string, opts ...Option) (*Client, error) {
+	var err error
+
+	c := &Client{
+		logf: func(string, ...interface{}) {},
+	}
+
+	for _, opt := range opts {
+		opt(c)
+	}
+
+	if c.t, err = luxws.Dial(ctx, address, luxws.WithLogFunc(luxws.LogFunc(c.logf))); err != nil {
 		return nil, err
 	}
 
-	return &Client{
-		t: t,
-	}, nil
+	return c, nil
 }
 
 // Close closes the underlying network connection.
