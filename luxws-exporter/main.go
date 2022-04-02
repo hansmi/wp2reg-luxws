@@ -19,7 +19,7 @@ import (
 var listenAddress = flag.String("web.listen-address", ":8081", "The address to listen on for HTTP requests")
 var metricsPath = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics")
 var disableExporterMetrics = flag.Bool("web.disable-exporter-metrics", false, "Exclude metrics about the exporter itself")
-var maxRequests = flag.Uint("web.max-requests", 3, "Maximum number of concurrent scrape requests")
+var maxConcurrent = flag.Uint("web.max-requests", 3, "Maximum number of concurrent scrape requests")
 var configFile = flag.String("web.config", "", "Path to config yaml file that can enable TLS or authentication")
 
 var timeout = flag.Duration("scrape-timeout", time.Minute, "Maximum duration for a scrape")
@@ -51,7 +51,7 @@ func main() {
 	}
 
 	opts := collectorOpts{
-		maxConcurrent: int64(*maxRequests),
+		maxConcurrent: int64(*maxConcurrent),
 		address:       *target,
 		httpAddress:   *httpTarget,
 	}
