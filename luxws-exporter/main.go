@@ -22,6 +22,7 @@ var disableExporterMetrics = flag.Bool("web.disable-exporter-metrics", false, "E
 var maxConcurrent = flag.Uint("web.max-requests", 3, "Maximum number of concurrent scrape requests")
 var configFile = flag.String("web.config", "", "Path to config yaml file that can enable TLS or authentication")
 
+var verbose = flag.Bool("verbose", false, "Log sent and received messages")
 var timeout = flag.Duration("scrape-timeout", time.Minute, "Maximum duration for a scrape")
 
 var target = flag.String("controller.address", "",
@@ -51,6 +52,7 @@ func main() {
 	}
 
 	opts := collectorOpts{
+		verbose:       *verbose,
 		maxConcurrent: int64(*maxConcurrent),
 		address:       *target,
 		httpAddress:   *httpTarget,

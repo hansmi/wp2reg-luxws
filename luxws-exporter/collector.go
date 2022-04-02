@@ -33,6 +33,7 @@ type contentCollectFunc func(chan<- prometheus.Metric, *luxwsclient.ContentRoot)
 type collector struct {
 	sem                   *semaphore.Weighted
 	address               string
+	clientOpts            []luxwsclient.Option
 	httpAddress           string
 	loc                   *time.Location
 	terms                 *luxwslang.Terminology
@@ -52,6 +53,7 @@ type collector struct {
 }
 
 type collectorOpts struct {
+	verbose       bool
 	maxConcurrent int64
 	address       string
 	httpAddress   string
@@ -60,6 +62,12 @@ type collectorOpts struct {
 }
 
 func newCollector(opts collectorOpts) *collector {
+	var clientOpts []luxwsclient.Option
+
+	if opts.verbose {
+		clientOpts = append(clientOpts, luxwsclient.WithLogFunc(log.Printf))
+	}
+
 	if opts.maxConcurrent < 1 {
 		opts.maxConcurrent = 1
 	}
@@ -67,6 +75,7 @@ func newCollector(opts collectorOpts) *collector {
 	return &collector{
 		sem:                   semaphore.NewWeighted(opts.maxConcurrent),
 		address:               opts.address,
+		clientOpts:            clientOpts,
 		httpAddress:           opts.httpAddress,
 		loc:                   opts.loc,
 		terms:                 opts.terms,
@@ -293,7 +302,7 @@ func (c *collector) collectLatestSwitchOff(ch chan<- prometheus.Metric, content 
 }
 
 func (c *collector) collectWebSocket(ctx context.Context, ch chan<- prometheus.Metric) error {
-	cl, err := luxwsclient.Dial(ctx, c.address)
+	cl, err := luxwsclient.Dial(ctx, c.address, c.clientOpts...)
 	if err != nil {
 		return err
 	}

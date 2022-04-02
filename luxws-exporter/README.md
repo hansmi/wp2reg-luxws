@@ -41,4 +41,17 @@ curl http://127.0.0.1:8000/metrics
 ```
 
 
+## Debugging
+
+The `-verbose` flag can be set to view the underlying messages sent to and
+received from the heat pump controller while collecting metrics. Example:
+
+```console
+$ ./luxws-exporter -verbose -controller.address=192.0.2.1:8214 -controller.language=en
+[…]
+2022/04/02 10:00:00 Sending message of type 1: "GET;0x7a1234"
+2022/04/02 10:00:00 Received message of type 1: "<Content><item id='0x7babcd'>[…]
+```
+
+
 [promexporter]: https://prometheus.io/docs/instrumenting/exporters/
