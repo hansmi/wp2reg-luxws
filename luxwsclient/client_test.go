@@ -3,41 +3,75 @@ package luxwsclient
 import (
 	"context"
 	"encoding/xml"
-	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/gorilla/websocket"
 	"github.com/hansmi/wp2reg-luxws/luxws"
 )
 
-type fakeTransport struct {
-	handleRoundTrip func(string) (string, error)
-}
+func TestResponseUnmarshalIgnore(t *testing.T) {
+	msg := struct {
+		XMLName xml.Name
+	}{}
 
-func (*fakeTransport) Close() error {
-	return nil
-}
-
-func (tr *fakeTransport) RoundTrip(ctx context.Context, req string, fn luxws.ResponseHandlerFunc) error {
-	if err := fn([]byte("<valid></valid>")); err != luxws.ErrIgnore {
-		return fmt.Errorf("valid XML wasn't ignored: %v", err)
+	if err := responseUnmarshal([]byte("<valid></valid>"), &msg, "name"); err != luxws.ErrIgnore {
+		t.Errorf("Valid XML wasn't ignored: %v", err)
 	}
+}
 
-	response, err := tr.handleRoundTrip(req)
+func newTestClient(t *testing.T, handleRoundTrip func(string) (string, error)) *Client {
+	var upgrader websocket.Upgrader
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			t.Errorf("Connection upgrade failed: %v", err)
+			return
+		}
+		defer c.Close()
+
+		for {
+			mt, message, err := c.ReadMessage()
+			if err != nil {
+				t.Errorf("ReadMessage() failed: %v", err)
+				break
+			}
+
+			response, err := handleRoundTrip(string(message))
+			if err != nil {
+				t.Errorf("handleRoundTrip(%q) failed: %v", message, err)
+				break
+			}
+
+			if err = c.WriteMessage(mt, []byte(response)); err != nil {
+				t.Errorf("WriteMessage(%q) failed: %v", message, err)
+				break
+			}
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	serverURL, err := url.Parse(server.URL)
 	if err != nil {
-		return err
+		t.Fatal(err)
 	}
 
-	return fn([]byte(response))
-}
+	t.Log(server.URL)
 
-func newFakeClient(t *testing.T, tr *fakeTransport) *Client {
-	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	t.Cleanup(cancel)
 
-	return &Client{
-		t: tr,
+	c, err := Dial(ctx, serverURL.Host)
+	if err != nil {
+		t.Fatalf("Dial(%q) failed: %v", serverURL.Host, err)
 	}
+
+	return c
 }
 
 func TestLogin(t *testing.T) {
@@ -82,9 +116,7 @@ func TestLogin(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			t.Cleanup(cancel)
 
-			c := newFakeClient(t, &fakeTransport{
-				handleRoundTrip: tc.handleRoundTrip,
-			})
+			c := newTestClient(t, tc.handleRoundTrip)
 
 			if got, err := c.Login(ctx, "1234"); tc.wantErr != nil {
 				if diff := cmp.Diff(tc.wantErr, err); diff != "" {
@@ -238,9 +270,7 @@ func TestGet(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			t.Cleanup(cancel)
 
-			c := newFakeClient(t, &fakeTransport{
-				handleRoundTrip: tc.handleRoundTrip,
-			})
+			c := newTestClient(t, tc.handleRoundTrip)
 
 			if got, err := c.Get(ctx, "0x1234"); tc.wantErr != nil {
 				if diff := cmp.Diff(tc.wantErr, err); diff != "" {
