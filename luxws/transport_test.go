@@ -109,7 +109,9 @@ func newFakeTransport(t *testing.T) (*fakeConn, *Transport) {
 	t.Helper()
 
 	fc := newFakeConn(t)
-	tr := newTransport(fc)
+	tr := newTransport(fc, []Option{
+		WithLogFunc(t.Logf),
+	})
 
 	t.Cleanup(func() {
 		tr.Close()

@@ -26,6 +26,20 @@ var ErrNotRunning = errors.New("receiver not running")
 // are made.
 var ErrBusy = errors.New("connection is busy")
 
+// Option is the type of options for transports.
+type Option func(*transport)
+
+// LogFunc describes a logging function (e.g. log.Printf).
+type LogFunc func(format string, v ...interface{})
+
+// WithLogFunc supplies a logging function to the transport. Received and sent
+// messages are written as log messages.
+func WithLogFunc(logf LogFunc) Option {
+	return func(t *transport) {
+		t.logf = logf
+	}
+}
+
 // TODO: Use net.ErrClosed as available in Go 1.16+
 func isErrClosed(err error) bool {
 	return err != nil && (errors.Is(err, ErrClosed) || strings.Contains(err.Error(), "use of closed network connection"))
@@ -50,6 +64,8 @@ type Transport struct {
 }
 
 type transport struct {
+	logf LogFunc
+
 	mu       sync.Mutex
 	ws       websocketConn
 	recvDone chan struct{}
@@ -57,10 +73,15 @@ type transport struct {
 	handler  *responseHandler
 }
 
-func newTransport(ws websocketConn) *Transport {
+func newTransport(ws websocketConn, opts []Option) *Transport {
 	t := &transport{
 		ws:       ws,
 		recvDone: make(chan struct{}),
+		logf:     func(string, ...interface{}) {},
+	}
+
+	for _, opt := range opts {
+		opt(t)
 	}
 
 	t.mu.Lock()
@@ -82,7 +103,7 @@ func newTransport(ws websocketConn) *Transport {
 // Dial connects to a LuxWS server. The address must have the format
 // "<host>:<port>" (see net.JoinHostPort). Use the context to establish
 // a timeout.
-func Dial(ctx context.Context, address string) (*Transport, error) {
+func Dial(ctx context.Context, address string, opts ...Option) (*Transport, error) {
 	url := url.URL{
 		Scheme: "ws",
 		Host:   address,
@@ -97,7 +118,7 @@ func Dial(ctx context.Context, address string) (*Transport, error) {
 		return nil, err
 	}
 
-	return newTransport(ws), nil
+	return newTransport(ws, opts), nil
 }
 
 // LocalAddr returns the local network address.
@@ -157,6 +178,8 @@ func (t *transport) receiverLoop() error {
 			return err
 		}
 
+		t.logf("Received message of type %v: %q", messageType, payload)
+
 		if messageType == websocket.TextMessage && len(payload) > 0 {
 			t.mu.Lock()
 			handler := t.handler
@@ -170,6 +193,8 @@ func (t *transport) receiverLoop() error {
 }
 
 func (t *transport) writeMessage(ctx context.Context, cmd string) error {
+	const messageType = websocket.TextMessage
+
 	if deadline, ok := ctx.Deadline(); ok {
 		if err := t.ws.SetWriteDeadline(deadline); err != nil {
 			return err
@@ -178,7 +203,9 @@ func (t *transport) writeMessage(ctx context.Context, cmd string) error {
 		defer t.ws.SetWriteDeadline(time.Time{})
 	}
 
-	if err := t.ws.WriteMessage(websocket.TextMessage, []byte(cmd)); err != nil {
+	t.logf("Sending message of type %v: %q", messageType, cmd)
+
+	if err := t.ws.WriteMessage(messageType, []byte(cmd)); err != nil {
 		return err
 	}
 
