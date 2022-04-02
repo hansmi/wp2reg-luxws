@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net"
+	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -126,6 +127,33 @@ func TestClose(t *testing.T) {
 
 	if err := tr.Close(); !isErrClosed(err) {
 		t.Errorf("second Close() returned unexpected value: %v", err)
+	}
+}
+
+func TestCloseByFinalizer(t *testing.T) {
+	fc := newFakeConn(t)
+
+	fc.mu.Lock()
+	closedCh := fc.closed
+	fc.mu.Unlock()
+
+	newTransport(fc, nil)
+
+	done := false
+
+	for i := 0; i < 10 && !done; i++ {
+		runtime.GC()
+
+		select {
+		case <-closedCh:
+			done = true
+		default:
+			time.Sleep(time.Second)
+		}
+	}
+
+	if !done {
+		t.Errorf("Finalize didn't close connection")
 	}
 }
 
