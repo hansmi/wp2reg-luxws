@@ -29,7 +29,7 @@ type handleWriteFunc func([]byte, chan<- cannedMessage) error
 
 type fakeConn struct {
 	mu          sync.Mutex
-	logf        func(string, ...interface{})
+	logf        func(string, ...any)
 	closed      chan struct{}
 	handleWrite handleWriteFunc
 	outgoing    chan cannedMessage

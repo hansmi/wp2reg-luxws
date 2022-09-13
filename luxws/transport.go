@@ -30,7 +30,7 @@ var ErrBusy = errors.New("connection is busy")
 type Option func(*transport)
 
 // LogFunc describes a logging function (e.g. log.Printf).
-type LogFunc func(format string, v ...interface{})
+type LogFunc func(format string, v ...any)
 
 // WithLogFunc supplies a logging function to the transport. Received and sent
 // messages are written as log messages.
@@ -77,7 +77,7 @@ func newTransport(ws websocketConn, opts []Option) *Transport {
 	t := &transport{
 		ws:       ws,
 		recvDone: make(chan struct{}),
-		logf:     func(string, ...interface{}) {},
+		logf:     func(string, ...any) {},
 	}
 
 	for _, opt := range opts {

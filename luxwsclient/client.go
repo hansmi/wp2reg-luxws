@@ -12,13 +12,13 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
-func xmlUnmarshal(data []byte, v interface{}) error {
+func xmlUnmarshal(data []byte, v any) error {
 	dec := xml.NewDecoder(bytes.NewReader(data))
 	dec.CharsetReader = charset.NewReaderLabel
 	return dec.Decode(v)
 }
 
-func responseUnmarshal(data []byte, v interface{}, wantLocalName string) error {
+func responseUnmarshal(data []byte, v any, wantLocalName string) error {
 	target := reflect.ValueOf(v)
 
 	if target.Kind() != reflect.Ptr {
@@ -57,7 +57,7 @@ type transport interface {
 type Option func(*Client)
 
 // LogFunc describes a logging function (e.g. log.Printf).
-type LogFunc func(format string, v ...interface{})
+type LogFunc func(format string, v ...any)
 
 // WithLogFunc supplies a logging function to the client.
 func WithLogFunc(logf LogFunc) Option {
@@ -81,7 +81,7 @@ func Dial(ctx context.Context, address string, opts ...Option) (*Client, error) 
 	var err error
 
 	c := &Client{
-		logf: func(string, ...interface{}) {},
+		logf: func(string, ...any) {},
 	}
 
 	for _, opt := range opts {
