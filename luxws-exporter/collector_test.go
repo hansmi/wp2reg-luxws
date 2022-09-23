@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -17,8 +19,22 @@ import (
 	"github.com/prometheus/client_golang/prometheus/testutil"
 )
 
+func discardAllLogs(t *testing.T) {
+	t.Helper()
+
+	orig := log.Writer()
+
+	t.Cleanup(func() {
+		log.SetOutput(orig)
+	})
+
+	log.SetOutput(io.Discard)
+}
+
 type adapter struct {
 	c *collector
+
+	metricNames []string
 
 	collect    func(ch chan<- prometheus.Metric) error
 	collectErr error
@@ -35,7 +51,7 @@ func (a *adapter) Collect(ch chan<- prometheus.Metric) {
 func (a *adapter) collectAndCompare(t *testing.T, want string, wantErr error) {
 	t.Helper()
 
-	if err := testutil.CollectAndCompare(a, strings.NewReader(want)); err != nil {
+	if err := testutil.CollectAndCompare(a, strings.NewReader(want), a.metricNames...); err != nil {
 		t.Error(err)
 	}
 
@@ -473,6 +489,45 @@ luxws_node_time_seconds 1136214245
 		c: c,
 		collect: func(ch chan<- prometheus.Metric) error {
 			return c.collectHTTP(ctx, ch)
+		},
+	}
+	a.collectAndCompare(t, want, nil)
+}
+
+func TestCollect(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "", http.StatusServiceUnavailable)
+	}))
+	t.Cleanup(server.Close)
+
+	c := newCollector(collectorOpts{
+		terms: luxwslang.English,
+		loc:   time.Local,
+	})
+
+	if serverURL, err := url.Parse(server.URL); err != nil {
+		t.Error(err)
+	} else {
+		c.address = serverURL.Host
+		c.httpAddress = serverURL.Host
+	}
+
+	want := `
+# HELP luxws_up Whether scrape was successful
+# TYPE luxws_up gauge
+luxws_up{status="collection via LuxWS protocol failed: websocket: bad handshake"} 0
+`
+
+	discardAllLogs(t)
+
+	a := &adapter{
+		c: c,
+		metricNames: []string{
+			"luxws_up",
+		},
+		collect: func(ch chan<- prometheus.Metric) error {
+			c.Collect(ch)
+			return nil
 		},
 	}
 	a.collectAndCompare(t, want, nil)
