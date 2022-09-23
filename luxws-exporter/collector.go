@@ -15,6 +15,7 @@ import (
 	"github.com/hansmi/wp2reg-luxws/luxwsclient"
 	"github.com/hansmi/wp2reg-luxws/luxwslang"
 	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/multierr"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/semaphore"
 )
@@ -303,6 +304,26 @@ func (c *collector) collectLatestSwitchOff(ch chan<- prometheus.Metric, content 
 	return c.collectTimetable(ch, c.switchOffDesc, content, c.terms.NavSwitchOffs)
 }
 
+func (c *collector) collectAll(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot) error {
+	var err error
+
+	for _, fn := range []contentCollectFunc{
+		c.collectInfo,
+		c.collectTemperatures,
+		c.collectOperatingDuration,
+		c.collectElapsedTime,
+		c.collectInputs,
+		c.collectOutputs,
+		c.collectSuppliedHeat,
+		c.collectLatestError,
+		c.collectLatestSwitchOff,
+	} {
+		multierr.AppendInto(&err, fn(ch, content))
+	}
+
+	return err
+}
+
 func (c *collector) collectWebSocket(ctx context.Context, ch chan<- prometheus.Metric) error {
 	cl, err := luxwsclient.Dial(ctx, c.address, c.clientOpts...)
 	if err != nil {
@@ -326,23 +347,7 @@ func (c *collector) collectWebSocket(ctx context.Context, ch chan<- prometheus.M
 		return fmt.Errorf("fetching ID %q failed: %w", info.ID, err)
 	}
 
-	for _, fn := range []contentCollectFunc{
-		c.collectInfo,
-		c.collectTemperatures,
-		c.collectOperatingDuration,
-		c.collectElapsedTime,
-		c.collectInputs,
-		c.collectOutputs,
-		c.collectSuppliedHeat,
-		c.collectLatestError,
-		c.collectLatestSwitchOff,
-	} {
-		if err := fn(ch, content); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return c.collectAll(ch, content)
 }
 
 func (c *collector) collectHTTP(ctx context.Context, ch chan<- prometheus.Metric) error {
