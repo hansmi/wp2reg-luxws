@@ -29,7 +29,7 @@ func findContentItem(r *luxwsclient.ContentRoot, name string) (*luxwsclient.Cont
 	return found, nil
 }
 
-type contentCollectFunc func(chan<- prometheus.Metric, *luxwsclient.ContentRoot) error
+type contentCollectFunc func(chan<- prometheus.Metric, *luxwsclient.ContentRoot, *quirks) error
 
 type collector struct {
 	sem                   *semaphore.Weighted
@@ -126,7 +126,7 @@ func (c *collector) parseValue(text string) (float64, string, error) {
 	return c.terms.ParseMeasurement(text)
 }
 
-func (c *collector) collectInfo(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot) error {
+func (c *collector) collectInfo(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot, q *quirks) error {
 	var swVersion, opMode, heatOutputUnit string
 	var heatOutputValue float64
 	var hpType []string
@@ -272,40 +272,41 @@ func (c *collector) collectTimetable(ch chan<- prometheus.Metric, desc *promethe
 	return nil
 }
 
-func (c *collector) collectTemperatures(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot) error {
+func (c *collector) collectTemperatures(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot, _ *quirks) error {
 	return c.collectMeasurements(ch, c.temperatureDesc, content, c.terms.NavTemperatures)
 }
 
-func (c *collector) collectOperatingDuration(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot) error {
+func (c *collector) collectOperatingDuration(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot, _ *quirks) error {
 	return c.collectDurations(ch, c.operatingDurationDesc, content, c.terms.NavOpHours, c.terms.HoursImpulsesRe)
 }
 
-func (c *collector) collectElapsedTime(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot) error {
+func (c *collector) collectElapsedTime(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot, _ *quirks) error {
 	return c.collectDurations(ch, c.elapsedDurationDesc, content, c.terms.NavElapsedTimes, nil)
 }
 
-func (c *collector) collectInputs(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot) error {
+func (c *collector) collectInputs(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot, _ *quirks) error {
 	return c.collectMeasurements(ch, c.inputDesc, content, c.terms.NavInputs)
 }
 
-func (c *collector) collectOutputs(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot) error {
+func (c *collector) collectOutputs(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot, _ *quirks) error {
 	return c.collectMeasurements(ch, c.outputDesc, content, c.terms.NavOutputs)
 }
 
-func (c *collector) collectSuppliedHeat(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot) error {
+func (c *collector) collectSuppliedHeat(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot, _ *quirks) error {
 	return c.collectMeasurements(ch, c.suppliedHeatDesc, content, c.terms.NavHeatQuantity)
 }
 
-func (c *collector) collectLatestError(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot) error {
+func (c *collector) collectLatestError(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot, _ *quirks) error {
 	return c.collectTimetable(ch, c.latestErrorDesc, content, c.terms.NavErrorMemory)
 }
 
-func (c *collector) collectLatestSwitchOff(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot) error {
+func (c *collector) collectLatestSwitchOff(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot, _ *quirks) error {
 	return c.collectTimetable(ch, c.switchOffDesc, content, c.terms.NavSwitchOffs)
 }
 
 func (c *collector) collectAll(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot) error {
 	var err error
+	var q quirks
 
 	for _, fn := range []contentCollectFunc{
 		c.collectInfo,
@@ -318,7 +319,7 @@ func (c *collector) collectAll(ch chan<- prometheus.Metric, content *luxwsclient
 		c.collectLatestError,
 		c.collectLatestSwitchOff,
 	} {
-		multierr.AppendInto(&err, fn(ch, content))
+		multierr.AppendInto(&err, fn(ch, content, &q))
 	}
 
 	return err
