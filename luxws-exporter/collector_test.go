@@ -67,11 +67,13 @@ func TestCollectWebSocketParts(t *testing.T) {
 	})
 
 	for _, tc := range []struct {
-		name    string
-		fn      contentCollectFunc
-		input   *luxwsclient.ContentRoot
-		want    string
-		wantErr error
+		name       string
+		fn         contentCollectFunc
+		input      *luxwsclient.ContentRoot
+		quirks     quirks
+		want       string
+		wantErr    error
+		wantQuirks quirks
 	}{
 		{
 			name: "info empty",
@@ -451,10 +453,14 @@ luxws_latest_switchoff{reason="bbb"} 1585954800
 			a := &adapter{
 				c: c,
 				collect: func(ch chan<- prometheus.Metric) error {
-					return tc.fn(ch, tc.input)
+					return tc.fn(ch, tc.input, &tc.quirks)
 				},
 			}
 			a.collectAndCompare(t, tc.want, tc.wantErr)
+
+			if diff := cmp.Diff(tc.wantQuirks, tc.quirks, cmp.AllowUnexported(quirks{})); diff != "" {
+				t.Errorf("Quirks diff (-want +got):\n%s", diff)
+			}
 		})
 	}
 }
