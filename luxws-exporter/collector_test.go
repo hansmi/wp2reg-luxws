@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hansmi/wp2reg-luxws/luxwsclient"
 	"github.com/hansmi/wp2reg-luxws/luxwslang"
 	"github.com/prometheus/client_golang/prometheus"
@@ -16,10 +18,10 @@ import (
 )
 
 type adapter struct {
-	t       *testing.T
-	c       *collector
-	fn      contentCollectFunc
-	content *luxwsclient.ContentRoot
+	c *collector
+
+	collect    func(ch chan<- prometheus.Metric) error
+	collectErr error
 }
 
 func (a *adapter) Describe(ch chan<- *prometheus.Desc) {
@@ -27,16 +29,18 @@ func (a *adapter) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (a *adapter) Collect(ch chan<- prometheus.Metric) {
-	if err := a.fn(ch, a.content); err != nil {
-		a.t.Errorf("Collection failed: %v", err)
-	}
+	a.collectErr = a.collect(ch)
 }
 
-func (a *adapter) collectAndCompare(t *testing.T, want string) {
+func (a *adapter) collectAndCompare(t *testing.T, want string, wantErr error) {
 	t.Helper()
 
 	if err := testutil.CollectAndCompare(a, strings.NewReader(want)); err != nil {
 		t.Error(err)
+	}
+
+	if diff := cmp.Diff(wantErr, a.collectErr, cmpopts.EquateErrors()); diff != "" {
+		t.Errorf("Collection error diff (-want +got):\n%s", diff)
 	}
 }
 
@@ -47,10 +51,11 @@ func TestCollectWebSocketParts(t *testing.T) {
 	})
 
 	for _, tc := range []struct {
-		name  string
-		fn    contentCollectFunc
-		input *luxwsclient.ContentRoot
-		want  string
+		name    string
+		fn      contentCollectFunc
+		input   *luxwsclient.ContentRoot
+		want    string
+		wantErr error
 	}{
 		{
 			name: "info empty",
@@ -427,31 +432,14 @@ luxws_latest_switchoff{reason="bbb"} 1585954800
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			a := &adapter{t, c, tc.fn, tc.input}
-			a.collectAndCompare(t, tc.want)
+			a := &adapter{
+				c: c,
+				collect: func(ch chan<- prometheus.Metric) error {
+					return tc.fn(ch, tc.input)
+				},
+			}
+			a.collectAndCompare(t, tc.want, tc.wantErr)
 		})
-	}
-}
-
-type httpAdapter struct {
-	t       *testing.T
-	c       *collector
-	collect func(ch chan<- prometheus.Metric)
-}
-
-func (a *httpAdapter) Describe(ch chan<- *prometheus.Desc) {
-	a.c.Describe(ch)
-}
-
-func (a *httpAdapter) Collect(ch chan<- prometheus.Metric) {
-	a.collect(ch)
-}
-
-func (a *httpAdapter) collectAndCompare(t *testing.T, want string) {
-	t.Helper()
-
-	if err := testutil.CollectAndCompare(a, strings.NewReader(want)); err != nil {
-		t.Error(err)
 	}
 }
 
@@ -475,14 +463,17 @@ func TestCollectHTTP(t *testing.T) {
 		c.httpAddress = serverURL.Host
 	}
 
-	a := &httpAdapter{t, c, func(ch chan<- prometheus.Metric) {
-		if err := c.collectHTTP(ctx, ch); err != nil {
-			t.Errorf("Collection failed: %v", err)
-		}
-	}}
-	a.collectAndCompare(t, `
+	want := `
 # HELP luxws_node_time_seconds System time in seconds since epoch (1970)
 # TYPE luxws_node_time_seconds gauge
 luxws_node_time_seconds 1136214245
-`)
+`
+
+	a := &adapter{
+		c: c,
+		collect: func(ch chan<- prometheus.Metric) error {
+			return c.collectHTTP(ctx, ch)
+		},
+	}
+	a.collectAndCompare(t, want, nil)
 }
