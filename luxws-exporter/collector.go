@@ -143,7 +143,13 @@ func (c *collector) collectInfo(ch chan<- prometheus.Metric, content *luxwsclien
 
 		switch item.Name {
 		case c.terms.StatusType:
-			hpType = append(hpType, normalizeSpace(*item.Value))
+			name := normalizeSpace(*item.Value)
+
+			if strings.EqualFold(name, "L2A") {
+				q.missingSuppliedHeat = true
+			}
+
+			hpType = append(hpType, name)
 		case c.terms.StatusSoftwareVersion:
 			swVersion = normalizeSpace(*item.Value)
 		case c.terms.StatusOperationMode:
@@ -292,7 +298,11 @@ func (c *collector) collectOutputs(ch chan<- prometheus.Metric, content *luxwscl
 	return c.collectMeasurements(ch, c.outputDesc, content, c.terms.NavOutputs)
 }
 
-func (c *collector) collectSuppliedHeat(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot, _ *quirks) error {
+func (c *collector) collectSuppliedHeat(ch chan<- prometheus.Metric, content *luxwsclient.ContentRoot, q *quirks) error {
+	if q.missingSuppliedHeat {
+		return nil
+	}
+
 	return c.collectMeasurements(ch, c.suppliedHeatDesc, content, c.terms.NavHeatQuantity)
 }
 

@@ -127,6 +127,37 @@ luxws_heat_quantity{unit="kWh"} 999
 `,
 		},
 		{
+			// https://github.com/hansmi/wp2reg-luxws/issues/11
+			name: "info L2A model",
+			fn:   c.collectInfo,
+			input: &luxwsclient.ContentRoot{
+				Items: []luxwsclient.ContentItem{
+					{
+						Name: "Anlagenstatus",
+						Items: []luxwsclient.ContentItem{
+							{Name: "Wärmepumpen Typ", Value: luxwsclient.String("l2a")},
+							{Name: "Softwarestand", Value: luxwsclient.String("v1.86.2")},
+							{Name: "Betriebszustand", Value: luxwsclient.String("----")},
+						},
+					},
+				},
+			},
+			want: `
+# HELP luxws_info Controller information
+# TYPE luxws_info gauge
+luxws_info{hptype="l2a",swversion="v1.86.2"} 1
+# HELP luxws_operational_mode Operational mode
+# TYPE luxws_operational_mode gauge
+luxws_operational_mode{mode="----"} 1
+# HELP luxws_heat_quantity Heat quantity
+# TYPE luxws_heat_quantity gauge
+luxws_heat_quantity{unit=""} 0
+`,
+			wantQuirks: quirks{
+				missingSuppliedHeat: true,
+			},
+		},
+		{
 			name: "temperatures empty",
 			fn:   c.collectTemperatures,
 			input: &luxwsclient.ContentRoot{
@@ -525,6 +556,65 @@ luxws_output{name="",unit=""} 0
 # HELP luxws_supplied_heat Supplied heat
 # TYPE luxws_supplied_heat gauge
 luxws_supplied_heat{name="",unit=""} 0
+# HELP luxws_temperature Sensor temperature
+# TYPE luxws_temperature gauge
+luxws_temperature{name="",unit=""} 0
+`,
+		},
+		{
+			// Heat pump controllers of type L2A don't report the amount of
+			// supplied heat.
+			//
+			// https://github.com/hansmi/wp2reg-luxws/issues/11
+			name: "L2A type",
+			input: &luxwsclient.ContentRoot{
+				Items: []luxwsclient.ContentItem{
+					{Name: "elapsed times"},
+					{Name: "error memory"},
+					{Name: "heat quantity"},
+					{Name: "information"},
+					{Name: "inputs"},
+					{Name: "operating hours"},
+					{Name: "outputs"},
+					{Name: "switch offs"},
+					{
+						Name: "system status",
+						Items: []luxwsclient.ContentItem{
+							{Name: "type of heat pump", Value: luxwsclient.String("aaa")},
+							{Name: "type of heat pump", Value: luxwsclient.String("l2a")},
+						},
+					},
+					{Name: "temperatures"},
+				},
+			},
+			want: `
+# HELP luxws_elapsed_duration_seconds Elapsed time
+# TYPE luxws_elapsed_duration_seconds gauge
+luxws_elapsed_duration_seconds{name=""} 0
+# HELP luxws_heat_quantity Heat quantity
+# TYPE luxws_heat_quantity gauge
+luxws_heat_quantity{unit=""} 0
+# HELP luxws_info Controller information
+# TYPE luxws_info gauge
+luxws_info{hptype="aaa, l2a",swversion=""} 1
+# HELP luxws_input Input values
+# TYPE luxws_input gauge
+luxws_input{name="",unit=""} 0
+# HELP luxws_latest_error Latest error
+# TYPE luxws_latest_error gauge
+luxws_latest_error{reason=""} 0
+# HELP luxws_latest_switchoff Latest switch-off
+# TYPE luxws_latest_switchoff gauge
+luxws_latest_switchoff{reason=""} 0
+# HELP luxws_operating_duration_seconds Operating time
+# TYPE luxws_operating_duration_seconds gauge
+luxws_operating_duration_seconds{name=""} 0
+# HELP luxws_operational_mode Operational mode
+# TYPE luxws_operational_mode gauge
+luxws_operational_mode{mode=""} 1
+# HELP luxws_output Output values
+# TYPE luxws_output gauge
+luxws_output{name="",unit=""} 0
 # HELP luxws_temperature Sensor temperature
 # TYPE luxws_temperature gauge
 luxws_temperature{name="",unit=""} 0
