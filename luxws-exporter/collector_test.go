@@ -459,6 +459,89 @@ luxws_latest_switchoff{reason="bbb"} 1585954800
 	}
 }
 
+func TestCollectAll(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		input   *luxwsclient.ContentRoot
+		want    string
+		wantErr error
+	}{
+		{
+			name:    "empty",
+			input:   &luxwsclient.ContentRoot{},
+			want:    "",
+			wantErr: cmpopts.AnyError,
+		},
+		{
+			name: "complete content",
+			input: &luxwsclient.ContentRoot{
+				Items: []luxwsclient.ContentItem{
+					{Name: "elapsed times"},
+					{Name: "error memory"},
+					{Name: "heat quantity"},
+					{Name: "information"},
+					{Name: "inputs"},
+					{Name: "operating hours"},
+					{Name: "outputs"},
+					{Name: "switch offs"},
+					{Name: "system status"},
+					{Name: "temperatures"},
+				},
+			},
+			want: `
+# HELP luxws_elapsed_duration_seconds Elapsed time
+# TYPE luxws_elapsed_duration_seconds gauge
+luxws_elapsed_duration_seconds{name=""} 0
+# HELP luxws_heat_quantity Heat quantity
+# TYPE luxws_heat_quantity gauge
+luxws_heat_quantity{unit=""} 0
+# HELP luxws_info Controller information
+# TYPE luxws_info gauge
+luxws_info{hptype="",swversion=""} 1
+# HELP luxws_input Input values
+# TYPE luxws_input gauge
+luxws_input{name="",unit=""} 0
+# HELP luxws_latest_error Latest error
+# TYPE luxws_latest_error gauge
+luxws_latest_error{reason=""} 0
+# HELP luxws_latest_switchoff Latest switch-off
+# TYPE luxws_latest_switchoff gauge
+luxws_latest_switchoff{reason=""} 0
+# HELP luxws_operating_duration_seconds Operating time
+# TYPE luxws_operating_duration_seconds gauge
+luxws_operating_duration_seconds{name=""} 0
+# HELP luxws_operational_mode Operational mode
+# TYPE luxws_operational_mode gauge
+luxws_operational_mode{mode=""} 1
+# HELP luxws_output Output values
+# TYPE luxws_output gauge
+luxws_output{name="",unit=""} 0
+# HELP luxws_supplied_heat Supplied heat
+# TYPE luxws_supplied_heat gauge
+luxws_supplied_heat{name="",unit=""} 0
+# HELP luxws_temperature Sensor temperature
+# TYPE luxws_temperature gauge
+luxws_temperature{name="",unit=""} 0
+`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			c := newCollector(collectorOpts{
+				terms: luxwslang.English,
+				loc:   time.UTC,
+			})
+
+			a := &adapter{
+				c: c,
+				collect: func(ch chan<- prometheus.Metric) error {
+					return c.collectAll(ch, tc.input)
+				},
+			}
+			a.collectAndCompare(t, tc.want, tc.wantErr)
+		})
+	}
+}
+
 func TestCollectHTTP(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
