@@ -54,6 +54,7 @@ func main() {
 	opts := collectorOpts{
 		verbose:       *verbose,
 		maxConcurrent: int64(*maxConcurrent),
+		timeout:       *timeout,
 		address:       *target,
 		httpAddress:   *httpTarget,
 	}

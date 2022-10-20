@@ -680,8 +680,9 @@ func TestCollect(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	c := newCollector(collectorOpts{
-		terms: luxwslang.English,
-		loc:   time.Local,
+		terms:   luxwslang.English,
+		loc:     time.Local,
+		timeout: time.Minute,
 	})
 
 	if serverURL, err := url.Parse(server.URL); err != nil {

@@ -33,6 +33,7 @@ type contentCollectFunc func(chan<- prometheus.Metric, *luxwsclient.ContentRoot,
 
 type collector struct {
 	sem                   *semaphore.Weighted
+	timeout               time.Duration
 	address               string
 	clientOpts            []luxwsclient.Option
 	httpAddress           string
@@ -56,6 +57,7 @@ type collector struct {
 type collectorOpts struct {
 	verbose       bool
 	maxConcurrent int64
+	timeout       time.Duration
 	address       string
 	httpAddress   string
 	loc           *time.Location
@@ -75,6 +77,7 @@ func newCollector(opts collectorOpts) *collector {
 
 	return &collector{
 		sem:                   semaphore.NewWeighted(opts.maxConcurrent),
+		timeout:               opts.timeout,
 		address:               opts.address,
 		clientOpts:            clientOpts,
 		httpAddress:           opts.httpAddress,
@@ -426,7 +429,7 @@ func (c *collector) collect(ctx context.Context, ch chan<- prometheus.Metric) er
 }
 
 func (c *collector) Collect(ch chan<- prometheus.Metric) {
-	ctx, cancel := context.WithTimeout(context.Background(), *timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
 	defer cancel()
 
 	if err := c.collect(ctx, ch); err == nil {
