@@ -14,13 +14,13 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 
 	kitlog "github.com/go-kit/kit/log"
+	webflag "github.com/prometheus/exporter-toolkit/web/kingpinflag"
 )
 
-var listenAddress = kingpin.Flag("web.listen-address", "The address to listen on for HTTP requests").Default(":8081").String()
+var webConfig = webflag.AddFlags(kingpin.CommandLine, ":8081")
 var metricsPath = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics").Default("/metrics").String()
 var disableExporterMetrics = kingpin.Flag("web.disable-exporter-metrics", "Exclude metrics about the exporter itself").Bool()
 var maxConcurrent = kingpin.Flag("web.max-requests", "Maximum number of concurrent scrape requests").Default("3").Uint()
-var configFile = kingpin.Flag("web.config", "Path to config yaml file that can enable TLS or authentication").String()
 
 var verbose = kingpin.Flag("verbose", "Log sent and received messages").Bool()
 var timeout = kingpin.Flag("scrape-timeout", "Maximum duration for a scrape").Default("1m").Duration()
@@ -89,13 +89,10 @@ func main() {
 			</html>`))
 	})
 
-	log.Printf("Listening on %q", *listenAddress)
-
 	logger := kitlog.NewLogfmtLogger(kitlog.StdlibWriter{})
+	server := &http.Server{}
 
-	server := &http.Server{Addr: *listenAddress}
-
-	if err := web.ListenAndServe(server, *configFile, logger); err != nil {
+	if err := web.ListenAndServe(server, webConfig, logger); err != nil {
 		log.Fatal(err)
 	}
 }
