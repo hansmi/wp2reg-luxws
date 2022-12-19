@@ -9,7 +9,7 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/prometheus/common v0.38.0
 	github.com/prometheus/exporter-toolkit v0.8.2
-	go.uber.org/multierr v1.8.0
+	go.uber.org/multierr v1.9.0
 	golang.org/x/net v0.4.0
 	golang.org/x/sync v0.1.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
