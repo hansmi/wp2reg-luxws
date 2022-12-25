@@ -137,12 +137,11 @@ func (t *transport) Close() error {
 	}
 
 	// Wait for receiver to terminate
-	select {
-	case <-t.recvDone:
-		t.mu.Lock()
-		t.recvErr = net.ErrClosed
-		t.mu.Unlock()
-	}
+	<-t.recvDone
+
+	t.mu.Lock()
+	t.recvErr = net.ErrClosed
+	t.mu.Unlock()
 
 	return nil
 }
