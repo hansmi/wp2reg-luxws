@@ -13,12 +13,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func TestErrClosed(t *testing.T) {
-	if !isErrClosed(ErrClosed) {
-		t.Errorf("isErrClosed(ErrClosed) is not true")
-	}
-}
-
 type cannedMessage struct {
 	messageType int
 	payload     []byte
@@ -58,7 +52,7 @@ func (c *fakeConn) SetWriteDeadline(t time.Time) error {
 
 	select {
 	case <-c.closed:
-		return ErrClosed
+		return net.ErrClosed
 	default:
 	}
 
@@ -70,7 +64,7 @@ func (c *fakeConn) WriteMessage(messageType int, payload []byte) error {
 
 	select {
 	case <-c.closed:
-		return ErrClosed
+		return net.ErrClosed
 	default:
 	}
 
@@ -85,7 +79,7 @@ func (c *fakeConn) ReadMessage() (int, []byte, error) {
 
 	select {
 	case <-c.closed:
-		return 0, nil, ErrClosed
+		return 0, nil, net.ErrClosed
 	case msg := <-c.outgoing:
 		return msg.messageType, msg.payload, msg.err
 	}
@@ -96,7 +90,7 @@ func (c *fakeConn) Close() error {
 
 	select {
 	case <-c.closed:
-		return ErrClosed
+		return net.ErrClosed
 	default:
 	}
 
@@ -127,7 +121,7 @@ func TestClose(t *testing.T) {
 		t.Errorf("Close() failed: %v", err)
 	}
 
-	if err := tr.Close(); !isErrClosed(err) {
+	if err := tr.Close(); !errors.Is(err, net.ErrClosed) {
 		t.Errorf("second Close() returned unexpected value: %v", err)
 	}
 }
@@ -169,7 +163,7 @@ func TestRoundTripAfterClose(t *testing.T) {
 		t.Errorf("Close() failed: %v", err)
 	}
 
-	if err := tr.RoundTrip(ctx, "", nil); !isErrClosed(err) {
+	if err := tr.RoundTrip(ctx, "", nil); !errors.Is(err, net.ErrClosed) {
 		t.Errorf("RoundTrip() after Close() didn't fail as expected: %v", err)
 	}
 }

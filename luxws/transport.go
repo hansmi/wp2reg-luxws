@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/url"
 	"runtime"
-	"strings"
 	"sync"
 	"time"
 
@@ -16,7 +15,7 @@ import (
 // ErrClosed is the error returned by an I/O call on a network connection that
 // has already been closed, or that is closed by another goroutine before the
 // I/O is completed.
-var ErrClosed = errors.New("use of closed network connection")
+var ErrClosed = net.ErrClosed
 
 // ErrNotRunning is the error returned when the websocket receiver goroutine is
 // no longer running and no specific error is available.
@@ -38,11 +37,6 @@ func WithLogFunc(logf LogFunc) Option {
 	return func(t *transport) {
 		t.logf = logf
 	}
-}
-
-// TODO: Use net.ErrClosed as available in Go 1.16+
-func isErrClosed(err error) bool {
-	return err != nil && (errors.Is(err, ErrClosed) || strings.Contains(err.Error(), "use of closed network connection"))
 }
 
 type websocketConn interface {
@@ -146,7 +140,7 @@ func (t *transport) Close() error {
 	select {
 	case <-t.recvDone:
 		t.mu.Lock()
-		t.recvErr = ErrClosed
+		t.recvErr = net.ErrClosed
 		t.mu.Unlock()
 	}
 
