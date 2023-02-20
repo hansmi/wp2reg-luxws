@@ -10,7 +10,7 @@ require (
 	github.com/prometheus/common v0.39.0
 	github.com/prometheus/exporter-toolkit v0.8.2
 	go.uber.org/multierr v1.9.0
-	golang.org/x/net v0.6.0
+	golang.org/x/net v0.7.0
 	golang.org/x/sync v0.1.0
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6
 )
