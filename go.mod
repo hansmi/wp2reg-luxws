@@ -7,7 +7,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/gorilla/websocket v1.5.0
 	github.com/prometheus/client_golang v1.14.0
-	github.com/prometheus/common v0.41.0
+	github.com/prometheus/common v0.42.0
 	github.com/prometheus/exporter-toolkit v0.8.2
 	go.uber.org/multierr v1.9.0
 	golang.org/x/net v0.8.0
