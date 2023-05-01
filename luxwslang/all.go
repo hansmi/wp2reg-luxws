@@ -5,6 +5,7 @@ import "fmt"
 // All returns a slice of all supported terminologies.
 func All() (result []*Terminology) {
 	return append(result,
+		Czech,
 		German,
 		English,
 		Dutch,
