@@ -14,8 +14,9 @@ and/or deployed by the following companies:
 * Novelan
 * possibly other companies and/or brands
 
-The websocket-based protocol was introduced in firmware version 3.81. The code
+The [websocket]-based protocol was introduced in firmware version 3.81. The code
 was developed and tested using wp2reg version 3.85.6.
+
 
 ## Prometheus exporter
 
@@ -25,16 +26,24 @@ directory for details.
 
 ## Installation
 
-Pre-built binaries are provided for all [releases][releases]:
+Pre-built binaries are provided for all [releases]:
 
 * Binary archives for Linux, Windows and Mac OS (`.tar.gz`, `.zip`)
 * Debian/Ubuntu (`.deb`)
 * RHEL/Fedora (`.rpm`)
 
-With the source being available it's also possible to produce custom builds
-directly using [Go][golang] or [GoReleaser][goreleaser].
+### Installation from the source code
+
+It's also possible to produce custom builds directly using [Go][golang] or
+[GoReleaser][goreleaser].
+
+With [Go 1.16][go1.16] or later the following command installs `luxws-exporter`
+system-wide into `/usr/local/bin/`:
+
+    sudo GOBIN=/usr/local/bin/ go install github.com/hansmi/wp2reg-luxws/luxws-exporter@main
 
 [golang]: https://golang.org/
-[websocket]: https://en.wikipedia.org/wiki/WebSocket
-[releases]: https://github.com/hansmi/wp2reg-luxws/releases/latest
+[go1.16]: https://github.com/golang/go/wiki/Modules#go-116
 [goreleaser]: https://goreleaser.com/
+[releases]: https://github.com/hansmi/wp2reg-luxws/releases/latest
+[websocket]: https://en.wikipedia.org/wiki/WebSocket
