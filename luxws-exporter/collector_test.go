@@ -94,7 +94,7 @@ luxws_info{hptype="",swversion=""} 1
 luxws_operational_mode{mode=""} 1
 # HELP luxws_heat_quantity Heat quantity
 # TYPE luxws_heat_quantity gauge
-luxws_heat_quantity{unit=""} 0
+luxws_heat_quantity{id="",unit=""} 0
 `,
 		},
 		{
@@ -123,7 +123,7 @@ luxws_info{hptype="typeA, typeB",swversion="v1.2.3"} 1
 luxws_operational_mode{mode="running"} 1
 # HELP luxws_heat_quantity Heat quantity
 # TYPE luxws_heat_quantity gauge
-luxws_heat_quantity{unit="kWh"} 999
+luxws_heat_quantity{id="",unit="kWh"} 999
 `,
 		},
 		{
@@ -151,7 +151,7 @@ luxws_info{hptype="l2a",swversion="v1.86.2"} 1
 luxws_operational_mode{mode="----"} 1
 # HELP luxws_heat_quantity Heat quantity
 # TYPE luxws_heat_quantity gauge
-luxws_heat_quantity{unit=""} 0
+luxws_heat_quantity{id="",unit=""} 0
 `,
 			wantQuirks: quirks{
 				missingSuppliedHeat: true,
@@ -170,7 +170,7 @@ luxws_heat_quantity{unit=""} 0
 			want: `
 # HELP luxws_temperature Sensor temperature
 # TYPE luxws_temperature gauge
-luxws_temperature{name="",unit=""} 0
+luxws_temperature{id="",name="",unit=""} 0
 `,
 		},
 		{
@@ -181,9 +181,9 @@ luxws_temperature{name="",unit=""} 0
 					{
 						Name: "Temperaturen",
 						Items: []luxwsclient.ContentItem{
-							{Name: "Wasser", Value: luxwsclient.String("10°C")},
-							{Name: "Aussen", Value: luxwsclient.String("100°C")},
-							{Name: "Etwas", Value: luxwsclient.String("1 K")},
+							{Name: "Wasser", ID: "i", Value: luxwsclient.String("10°C")},
+							{Name: "Aussen", ID: "j", Value: luxwsclient.String("100°C")},
+							{Name: "Etwas", ID: "k", Value: luxwsclient.String("1 K")},
 						},
 					},
 				},
@@ -191,9 +191,9 @@ luxws_temperature{name="",unit=""} 0
 			want: `
 # HELP luxws_temperature Sensor temperature
 # TYPE luxws_temperature gauge
-luxws_temperature{name="Aussen",unit="degC"} 100
-luxws_temperature{name="Etwas",unit="K"} 1
-luxws_temperature{name="Wasser",unit="degC"} 10
+luxws_temperature{id="j",name="Aussen",unit="degC"} 100
+luxws_temperature{id="k",name="Etwas",unit="K"} 1
+luxws_temperature{id="i",name="Wasser",unit="degC"} 10
 `,
 		},
 		{
@@ -209,7 +209,7 @@ luxws_temperature{name="Wasser",unit="degC"} 10
 			want: `
 # HELP luxws_operating_duration_seconds Operating time
 # TYPE luxws_operating_duration_seconds gauge
-luxws_operating_duration_seconds{name=""} 0
+luxws_operating_duration_seconds{id="",name=""} 0
 `,
 		},
 		{
@@ -220,8 +220,8 @@ luxws_operating_duration_seconds{name=""} 0
 					{
 						Name: "Betriebsstunden",
 						Items: []luxwsclient.ContentItem{
-							{Name: "On\tspace", Value: luxwsclient.String("1h")},
-							{Name: "Heat", Value: luxwsclient.String("1:2:3")},
+							{ID: "0xdead", Name: "On\tspace", Value: luxwsclient.String("1h")},
+							{ID: "0xcafe", Name: "Heat", Value: luxwsclient.String("1:2:3")},
 							{Name: "Impulse xyz", Value: luxwsclient.String("")},
 						},
 					},
@@ -230,8 +230,8 @@ luxws_operating_duration_seconds{name=""} 0
 			want: `
 # HELP luxws_operating_duration_seconds Operating time
 # TYPE luxws_operating_duration_seconds gauge
-luxws_operating_duration_seconds{name="Heat"} 3723
-luxws_operating_duration_seconds{name="On space"} 3600
+luxws_operating_duration_seconds{id="cafe",name="Heat"} 3723
+luxws_operating_duration_seconds{id="dead",name="On space"} 3600
 `,
 		},
 		{
@@ -247,7 +247,7 @@ luxws_operating_duration_seconds{name="On space"} 3600
 			want: `
 # HELP luxws_elapsed_duration_seconds Elapsed time
 # TYPE luxws_elapsed_duration_seconds gauge
-luxws_elapsed_duration_seconds{name=""} 0
+luxws_elapsed_duration_seconds{id="",name=""} 0
 `,
 		},
 		{
@@ -258,8 +258,8 @@ luxws_elapsed_duration_seconds{name=""} 0
 					{
 						Name: "Ablaufzeiten",
 						Items: []luxwsclient.ContentItem{
-							{Name: "a", Value: luxwsclient.String("1h")},
-							{Name: "b", Value: luxwsclient.String("1:2")},
+							{ID: "i", Name: "a", Value: luxwsclient.String("1h")},
+							{ID: "j", Name: "b", Value: luxwsclient.String("1:2")},
 						},
 					},
 				},
@@ -267,8 +267,8 @@ luxws_elapsed_duration_seconds{name=""} 0
 			want: `
 # HELP luxws_elapsed_duration_seconds Elapsed time
 # TYPE luxws_elapsed_duration_seconds gauge
-luxws_elapsed_duration_seconds{name="a"} 3600
-luxws_elapsed_duration_seconds{name="b"} 3720
+luxws_elapsed_duration_seconds{id="i",name="a"} 3600
+luxws_elapsed_duration_seconds{id="j",name="b"} 3720
 `,
 		},
 		{
@@ -284,7 +284,7 @@ luxws_elapsed_duration_seconds{name="b"} 3720
 			want: `
 # HELP luxws_input Input values
 # TYPE luxws_input gauge
-luxws_input{name="",unit=""} 0
+luxws_input{id="",name="",unit=""} 0
 `,
 		},
 		{
@@ -295,8 +295,8 @@ luxws_input{name="",unit=""} 0
 					{
 						Name: "Eingänge",
 						Items: []luxwsclient.ContentItem{
-							{Name: "temp a", Value: luxwsclient.String("20 °C")},
-							{Name: "pressure", Value: luxwsclient.String("3 bar")},
+							{ID: "0x0xff", Name: "temp a", Value: luxwsclient.String("20 °C")},
+							{ID: "0x0xaa", Name: "pressure", Value: luxwsclient.String("3 bar")},
 						},
 					},
 				},
@@ -304,8 +304,8 @@ luxws_input{name="",unit=""} 0
 			want: `
 # HELP luxws_input Input values
 # TYPE luxws_input gauge
-luxws_input{name="temp a",unit="degC"} 20
-luxws_input{name="pressure",unit="bar"} 3
+luxws_input{id="ff",name="temp a",unit="degC"} 20
+luxws_input{id="aa",name="pressure",unit="bar"} 3
 `,
 		},
 		{
@@ -321,7 +321,7 @@ luxws_input{name="pressure",unit="bar"} 3
 			want: `
 # HELP luxws_output Output values
 # TYPE luxws_output gauge
-luxws_output{name="",unit=""} 0
+luxws_output{id="",name="",unit=""} 0
 `,
 		},
 		{
@@ -332,8 +332,8 @@ luxws_output{name="",unit=""} 0
 					{
 						Name: "Ausgänge",
 						Items: []luxwsclient.ContentItem{
-							{Name: "rot", Value: luxwsclient.String("200 RPM")},
-							{Name: "pwm", Value: luxwsclient.String("33 %")},
+							{ID: "0x1234", Name: "rot", Value: luxwsclient.String("200 RPM")},
+							{ID: "0x5678", Name: "pwm", Value: luxwsclient.String("33 %")},
 						},
 					},
 				},
@@ -341,8 +341,8 @@ luxws_output{name="",unit=""} 0
 			want: `
 # HELP luxws_output Output values
 # TYPE luxws_output gauge
-luxws_output{name="pwm",unit="pct"} 33
-luxws_output{name="rot",unit="rpm"} 200
+luxws_output{id="5678",name="pwm",unit="pct"} 33
+luxws_output{id="1234",name="rot",unit="rpm"} 200
 `,
 		},
 		{
@@ -358,7 +358,7 @@ luxws_output{name="rot",unit="rpm"} 200
 			want: `
 # HELP luxws_supplied_heat Supplied heat
 # TYPE luxws_supplied_heat gauge
-luxws_supplied_heat{name="",unit=""} 0
+luxws_supplied_heat{id="",name="",unit=""} 0
 `,
 		},
 		{
@@ -369,8 +369,8 @@ luxws_supplied_heat{name="",unit=""} 0
 					{
 						Name: "Wärmemenge",
 						Items: []luxwsclient.ContentItem{
-							{Name: "water", Value: luxwsclient.String("200 kW")},
-							{Name: "ice", Value: luxwsclient.String("100 kW")},
+							{ID: "j", Name: "water", Value: luxwsclient.String("200 kW")},
+							{ID: "i", Name: "ice", Value: luxwsclient.String("100 kW")},
 						},
 					},
 				},
@@ -378,8 +378,8 @@ luxws_supplied_heat{name="",unit=""} 0
 			want: `
 # HELP luxws_supplied_heat Supplied heat
 # TYPE luxws_supplied_heat gauge
-luxws_supplied_heat{name="ice",unit="kW"} 100
-luxws_supplied_heat{name="water",unit="kW"} 200
+luxws_supplied_heat{id="i",name="ice",unit="kW"} 100
+luxws_supplied_heat{id="j",name="water",unit="kW"} 200
 `,
 		},
 		{
@@ -395,7 +395,7 @@ luxws_supplied_heat{name="water",unit="kW"} 200
 			want: `
 # HELP luxws_latest_error Latest error
 # TYPE luxws_latest_error gauge
-luxws_latest_error{reason=""} 0
+luxws_latest_error{id="",reason=""} 0
 `,
 		},
 		{
@@ -416,8 +416,8 @@ luxws_latest_error{reason=""} 0
 			want: `
 # HELP luxws_latest_error Latest error
 # TYPE luxws_latest_error gauge
-luxws_latest_error{reason="aaa"} 1296633600
-luxws_latest_error{reason="bbb"} 1396566000
+luxws_latest_error{id="",reason="aaa"} 1296633600
+luxws_latest_error{id="",reason="bbb"} 1396566000
 `,
 		},
 		{
@@ -438,7 +438,7 @@ luxws_latest_error{reason="bbb"} 1396566000
 			want: `
 # HELP luxws_latest_error Latest error
 # TYPE luxws_latest_error gauge
-luxws_latest_error{reason="text"} 1636407609
+luxws_latest_error{id="",reason="text"} 1636407609
 `,
 		},
 		{
@@ -454,7 +454,7 @@ luxws_latest_error{reason="text"} 1636407609
 			want: `
 # HELP luxws_latest_switchoff Latest switch-off
 # TYPE luxws_latest_switchoff gauge
-luxws_latest_switchoff{reason=""} 0
+luxws_latest_switchoff{id="",reason=""} 0
 `,
 		},
 		{
@@ -464,10 +464,11 @@ luxws_latest_switchoff{reason=""} 0
 				Items: []luxwsclient.ContentItem{
 					{
 						Name: "Abschaltungen",
+						
 						Items: []luxwsclient.ContentItem{
-							{Name: "02.02.19 08:00:00", Value: luxwsclient.String("aaa")},
-							{Name: "03.04.20 23:00:00", Value: luxwsclient.String("bbb")},
-							{Name: "01.01.20 09:00:11", Value: luxwsclient.String("aaa")},
+							{ID: "0x2bad", Name: "02.02.19 08:00:00", Value: luxwsclient.String("aaa")},
+							{ID: "0xc0de", Name: "03.04.20 23:00:00", Value: luxwsclient.String("bbb")},
+							{ID: "0xface", Name: "01.01.20 09:00:11", Value: luxwsclient.String("aaa")},
 						},
 					},
 				},
@@ -475,8 +476,8 @@ luxws_latest_switchoff{reason=""} 0
 			want: `
 # HELP luxws_latest_switchoff Latest switch-off
 # TYPE luxws_latest_switchoff gauge
-luxws_latest_switchoff{reason="aaa"} 1577869211
-luxws_latest_switchoff{reason="bbb"} 1585954800
+luxws_latest_switchoff{id="face",reason="aaa"} 1577869211
+luxws_latest_switchoff{id="c0de",reason="bbb"} 1585954800
 `,
 		},
 	} {
@@ -528,37 +529,37 @@ func TestCollectAll(t *testing.T) {
 			want: `
 # HELP luxws_elapsed_duration_seconds Elapsed time
 # TYPE luxws_elapsed_duration_seconds gauge
-luxws_elapsed_duration_seconds{name=""} 0
+luxws_elapsed_duration_seconds{id="",name=""} 0
 # HELP luxws_heat_quantity Heat quantity
 # TYPE luxws_heat_quantity gauge
-luxws_heat_quantity{unit=""} 0
+luxws_heat_quantity{id="",unit=""} 0
 # HELP luxws_info Controller information
 # TYPE luxws_info gauge
 luxws_info{hptype="",swversion=""} 1
 # HELP luxws_input Input values
 # TYPE luxws_input gauge
-luxws_input{name="",unit=""} 0
+luxws_input{id="",name="",unit=""} 0
 # HELP luxws_latest_error Latest error
 # TYPE luxws_latest_error gauge
-luxws_latest_error{reason=""} 0
+luxws_latest_error{id="",reason=""} 0
 # HELP luxws_latest_switchoff Latest switch-off
 # TYPE luxws_latest_switchoff gauge
-luxws_latest_switchoff{reason=""} 0
+luxws_latest_switchoff{id="",reason=""} 0
 # HELP luxws_operating_duration_seconds Operating time
 # TYPE luxws_operating_duration_seconds gauge
-luxws_operating_duration_seconds{name=""} 0
+luxws_operating_duration_seconds{id="",name=""} 0
 # HELP luxws_operational_mode Operational mode
 # TYPE luxws_operational_mode gauge
 luxws_operational_mode{mode=""} 1
 # HELP luxws_output Output values
 # TYPE luxws_output gauge
-luxws_output{name="",unit=""} 0
+luxws_output{id="",name="",unit=""} 0
 # HELP luxws_supplied_heat Supplied heat
 # TYPE luxws_supplied_heat gauge
-luxws_supplied_heat{name="",unit=""} 0
+luxws_supplied_heat{id="",name="",unit=""} 0
 # HELP luxws_temperature Sensor temperature
 # TYPE luxws_temperature gauge
-luxws_temperature{name="",unit=""} 0
+luxws_temperature{id="",name="",unit=""} 0
 `,
 		},
 		{
@@ -590,34 +591,34 @@ luxws_temperature{name="",unit=""} 0
 			want: `
 # HELP luxws_elapsed_duration_seconds Elapsed time
 # TYPE luxws_elapsed_duration_seconds gauge
-luxws_elapsed_duration_seconds{name=""} 0
+luxws_elapsed_duration_seconds{id="",name=""} 0
 # HELP luxws_heat_quantity Heat quantity
 # TYPE luxws_heat_quantity gauge
-luxws_heat_quantity{unit=""} 0
+luxws_heat_quantity{id="",unit=""} 0
 # HELP luxws_info Controller information
 # TYPE luxws_info gauge
 luxws_info{hptype="aaa, l2a",swversion=""} 1
 # HELP luxws_input Input values
 # TYPE luxws_input gauge
-luxws_input{name="",unit=""} 0
+luxws_input{id="",name="",unit=""} 0
 # HELP luxws_latest_error Latest error
 # TYPE luxws_latest_error gauge
-luxws_latest_error{reason=""} 0
+luxws_latest_error{id="",reason=""} 0
 # HELP luxws_latest_switchoff Latest switch-off
 # TYPE luxws_latest_switchoff gauge
-luxws_latest_switchoff{reason=""} 0
+luxws_latest_switchoff{id="",reason=""} 0
 # HELP luxws_operating_duration_seconds Operating time
 # TYPE luxws_operating_duration_seconds gauge
-luxws_operating_duration_seconds{name=""} 0
+luxws_operating_duration_seconds{id="",name=""} 0
 # HELP luxws_operational_mode Operational mode
 # TYPE luxws_operational_mode gauge
 luxws_operational_mode{mode=""} 1
 # HELP luxws_output Output values
 # TYPE luxws_output gauge
-luxws_output{name="",unit=""} 0
+luxws_output{id="",name="",unit=""} 0
 # HELP luxws_temperature Sensor temperature
 # TYPE luxws_temperature gauge
-luxws_temperature{name="",unit=""} 0
+luxws_temperature{id="",name="",unit=""} 0
 `,
 		},
 	} {

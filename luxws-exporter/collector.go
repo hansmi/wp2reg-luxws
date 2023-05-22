@@ -84,17 +84,17 @@ func newCollector(opts collectorOpts) *collector {
 		loc:                   opts.loc,
 		terms:                 opts.terms,
 		upDesc:                prometheus.NewDesc("luxws_up", "Whether scrape was successful", []string{"status"}, nil),
-		temperatureDesc:       prometheus.NewDesc("luxws_temperature", "Sensor temperature", []string{"name", "unit"}, nil),
-		operatingDurationDesc: prometheus.NewDesc("luxws_operating_duration_seconds", "Operating time", []string{"name"}, nil),
-		elapsedDurationDesc:   prometheus.NewDesc("luxws_elapsed_duration_seconds", "Elapsed time", []string{"name"}, nil),
-		inputDesc:             prometheus.NewDesc("luxws_input", "Input values", []string{"name", "unit"}, nil),
-		outputDesc:            prometheus.NewDesc("luxws_output", "Output values", []string{"name", "unit"}, nil),
+		temperatureDesc:       prometheus.NewDesc("luxws_temperature", "Sensor temperature", []string{"name", "unit", "id"}, nil),
+		operatingDurationDesc: prometheus.NewDesc("luxws_operating_duration_seconds", "Operating time", []string{"name", "id"}, nil),
+		elapsedDurationDesc:   prometheus.NewDesc("luxws_elapsed_duration_seconds", "Elapsed time", []string{"name", "id"}, nil),
+		inputDesc:             prometheus.NewDesc("luxws_input", "Input values", []string{"name", "unit", "id"}, nil),
+		outputDesc:            prometheus.NewDesc("luxws_output", "Output values", []string{"name", "unit", "id"}, nil),
 		infoDesc:              prometheus.NewDesc("luxws_info", "Controller information", []string{"swversion", "hptype"}, nil),
 		opModeDesc:            prometheus.NewDesc("luxws_operational_mode", "Operational mode", []string{"mode"}, nil),
-		heatQuantityDesc:      prometheus.NewDesc("luxws_heat_quantity", "Heat quantity", []string{"unit"}, nil),
-		suppliedHeatDesc:      prometheus.NewDesc("luxws_supplied_heat", "Supplied heat", []string{"name", "unit"}, nil),
-		latestErrorDesc:       prometheus.NewDesc("luxws_latest_error", "Latest error", []string{"reason"}, nil),
-		switchOffDesc:         prometheus.NewDesc("luxws_latest_switchoff", "Latest switch-off", []string{"reason"}, nil),
+		heatQuantityDesc:      prometheus.NewDesc("luxws_heat_quantity", "Heat quantity", []string{"unit", "id"}, nil),
+		suppliedHeatDesc:      prometheus.NewDesc("luxws_supplied_heat", "Supplied heat", []string{"name", "unit", "id"}, nil),
+		latestErrorDesc:       prometheus.NewDesc("luxws_latest_error", "Latest error", []string{"reason", "id"}, nil),
+		switchOffDesc:         prometheus.NewDesc("luxws_latest_switchoff", "Latest switch-off", []string{"reason", "id"}, nil),
 		nodeTimeDesc:          prometheus.NewDesc("luxws_node_time_seconds", "System time in seconds since epoch (1970)", nil, nil),
 	}
 }
@@ -133,6 +133,7 @@ func (c *collector) collectInfo(ch chan<- prometheus.Metric, content *luxwsclien
 	var swVersion, opMode, heatOutputUnit string
 	var heatOutputValue float64
 	var hpType []string
+        var id string
 
 	group, err := findContentItem(content, c.terms.NavSystemStatus)
 	if err != nil {
@@ -161,6 +162,7 @@ func (c *collector) collectInfo(ch chan<- prometheus.Metric, content *luxwsclien
 			if heatOutputValue, heatOutputUnit, err = c.parseValue(*item.Value); err != nil {
 				return fmt.Errorf("parsing heat output failed: %w", err)
 			}
+                        id = item.ID
 		}
 	}
 
@@ -173,7 +175,7 @@ func (c *collector) collectInfo(ch chan<- prometheus.Metric, content *luxwsclien
 		1, opMode)
 
 	ch <- prometheus.MustNewConstMetric(c.heatQuantityDesc, prometheus.GaugeValue,
-		heatOutputValue, heatOutputUnit)
+		heatOutputValue, heatOutputUnit, normalizeId(id))
 
 	return nil
 }
@@ -197,14 +199,14 @@ func (c *collector) collectMeasurements(ch chan<- prometheus.Metric, desc *prome
 		}
 
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue,
-			value, normalizeSpace(item.Name), unit)
+			value, normalizeSpace(item.Name), unit, normalizeId(item.ID))
 
 		found = true
 	}
 
 	if !found {
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue,
-			0, "", "")
+			0, "", "", "")
 	}
 
 	return nil
@@ -229,14 +231,14 @@ func (c *collector) collectDurations(ch chan<- prometheus.Metric, desc *promethe
 		}
 
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue,
-			duration.Seconds(), normalizeSpace(item.Name))
+			duration.Seconds(), normalizeSpace(item.Name), normalizeId(item.ID))
 
 		found = true
 	}
 
 	if !found {
 		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue,
-			0, "")
+			0, "", "")
 	}
 
 	return nil
@@ -248,7 +250,11 @@ func (c *collector) collectTimetable(ch chan<- prometheus.Metric, desc *promethe
 		return err
 	}
 
-	latest := map[string]time.Time{}
+        type entry struct {
+            ts time.Time
+            id string
+        }
+	latest := map[string]entry{}
 
 	for _, item := range group.Items {
 		tsRaw := normalizeSpace(item.Name)
@@ -265,16 +271,16 @@ func (c *collector) collectTimetable(ch chan<- prometheus.Metric, desc *promethe
 		reason := normalizeSpace(*item.Value)
 
 		// Use only the most recent timestamp per reason
-		if prev := latest[reason]; prev.IsZero() || prev.Before(ts) {
-			latest[reason] = ts
+		if prev := latest[reason]; prev.ts.IsZero() || prev.ts.Before(ts) {
+			latest[reason] = entry{ts, item.ID}
 		}
 	}
 
 	if len(latest) == 0 {
-		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, 0, "")
+		ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, 0, "", "")
 	} else {
-		for reason, ts := range latest {
-			ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, float64(ts.Unix()), reason)
+		for reason, e := range latest {
+			ch <- prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, float64(e.ts.Unix()), reason, normalizeId(e.id))
 		}
 	}
 
