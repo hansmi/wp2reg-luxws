@@ -6,15 +6,12 @@ Description=Prometheus exporter for working with heat pump controllers from Alph
 ; Start after the network has been configured
 After=network-online.target
 Wants=network-online.target
-StartLimitInterval=200
-StartLimitBurst=5
 
 [Service]
+EnvironmentFile=-/etc/default/wp2reg-luxws-exporter
 Type=simple
-; ===> Set the path and flags according to your environment. <================
-ExecStart=/usr/local/sbin/luxws-exporter --controller.address=192.168.0.1:8214 --controller.address.http=192.168.0.1:80 --controller.language=cz --web.listen-address=localhost:9101
+ExecStart=/usr/local/sbin/luxws-exporter $WP2REG_LUXWS_EXPORTER_ARGS
 Restart=always
-RestartSec=30
 ; The fields below are optional, but strongly recommended: The service is put
 ; into an empty runtime directory chroot, i.e. the runtime directory which
 ; usually resides under /run. See also https://unix.stackexchange.com/q/635027/22339

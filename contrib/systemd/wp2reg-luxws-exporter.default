@@ -1,0 +1,3 @@
+# Place this file into /etc/default/wp2reg-luxws-exporter and set the flags
+# according to your environment.
+WP2REG_LUXWS_EXPORTER_ARGS='--controller.address=192.168.0.1:8214 --controller.address.http=192.168.0.1:80 --controller.language=en --web.listen-address=localhost:9101'

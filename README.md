@@ -37,13 +37,13 @@ Pre-built binaries are provided for all [releases]:
 It's also possible to produce custom builds directly using [Go][golang] or
 [GoReleaser][goreleaser].
 
-With [Go 1.16][go1.16] or later the following command installs `luxws-exporter`
+With Go 1.16 or later the following command installs `luxws-exporter`
 system-wide into `/usr/local/bin/`:
 
-    sudo GOBIN=/usr/local/bin/ go install github.com/hansmi/wp2reg-luxws/luxws-exporter@main
+    go build -o luxws-exporter/luxws-exporter ./luxws-exporter && \
+      sudo install -t /usr/local/bin -m 0755 luxws-exporter/luxws-exporter
 
 [golang]: https://golang.org/
-[go1.16]: https://github.com/golang/go/wiki/Modules#go-116
 [goreleaser]: https://goreleaser.com/
 [releases]: https://github.com/hansmi/wp2reg-luxws/releases/latest
 [websocket]: https://en.wikipedia.org/wiki/WebSocket
