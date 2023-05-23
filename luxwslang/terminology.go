@@ -28,6 +28,7 @@ type Terminology struct {
 	NavInputs       string
 	NavOutputs      string
 	NavHeatQuantity string
+	NavEnergyUsed   string
 	NavErrorMemory  string
 	NavSwitchOffs   string
 
