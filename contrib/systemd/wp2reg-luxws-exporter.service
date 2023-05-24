@@ -2,7 +2,8 @@
 ; Adapt at least `ExecStart` below to your environment and copy this file to
 ; /etc/systemd/system/.
 [Unit]
-Description=Prometheus exporter for working with heat pump controllers from Alpha Innotec and other manufacturers. https://github.com/hansmi/wp2reg-luxws
+Description=Prometheus exporter for working with heat pump controllers from Alpha Innotec and other manufacturers.
+Documentation=https://github.com/hansmi/wp2reg-luxws
 ; Start after the network has been configured
 After=network-online.target
 Wants=network-online.target
