@@ -138,6 +138,7 @@ func TestParseMeasurement(t *testing.T) {
 		{terms: German, input: "100000 kWh", want: 100000, wantUnit: "kWh"},
 		{terms: German, input: "1 kW", want: 1, wantUnit: "kW"},
 		{terms: German, input: "16.66 Hz", want: 16.66, wantUnit: "Hz"},
+		{terms: German, input: "2", want: 2, wantUnit: "enum"},
 		{terms: English, input: "200 mA", want: 200, wantUnit: "mA"},
 		{terms: English, input: "3600s", want: 3600, wantUnit: "s"},
 		{terms: English, input: "36 m³/h", want: 36, wantUnit: "m³/h"},

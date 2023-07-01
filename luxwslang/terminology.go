@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -117,6 +118,16 @@ func (*Terminology) ParseMeasurement(text string) (float64, string, error) {
 
 			return value, unit, nil
 		}
+	}
+
+	if _, err := strconv.Atoi(text); err == nil && len(text) == 1 {
+		var value float64
+		var unit string
+
+		unit = "enum"
+		value, _ = strconv.ParseFloat(text, 64)
+
+		return value, unit, nil
 	}
 
 	return 0, "", fmt.Errorf("unrecognized measurement format %q", text)
