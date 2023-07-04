@@ -69,16 +69,16 @@ func (*Terminology) ParseDuration(v string) (time.Duration, error) {
 	return time.ParseDuration(fmt.Sprintf("%dh%dm%ds", hours, minutes, seconds))
 }
 
-// ParseMeasurement parses a string with a value and a physical unit such as
-// degrees Celsius or kWh. The unit is case-sensitive. The returned unit string
-// is in a normalized form.
+// ParseMeasurement parses a string with a value and an optional physical unit
+// such as degrees Celsius or kWh. The unit name is case-sensitive. The
+// returned unit string is in a normalized form.
 func (*Terminology) ParseMeasurement(text string) (float64, string, error) {
+	text = strings.TrimSpace(strings.ReplaceAll(text, ",", "."))
+
 	if len(text) > 2 {
 		var value float64
 		var unit string
 		var ok bool
-
-		text = strings.TrimSpace(strings.ReplaceAll(text, ",", "."))
 
 		for _, format := range []string{
 			"%f %s\n",
@@ -120,14 +120,10 @@ func (*Terminology) ParseMeasurement(text string) (float64, string, error) {
 		}
 	}
 
-	if _, err := strconv.Atoi(text); err == nil && len(text) == 1 {
-		var value float64
-		var unit string
-
-		unit = "enum"
-		value, _ = strconv.ParseFloat(text, 64)
-
-		return value, unit, nil
+	// Heat pumps of type LD7 report a "Smart Grid" measurement which is
+	// a dimensionless enumeration.
+	if value, err := strconv.ParseFloat(text, 64); err == nil {
+		return value, "", nil
 	}
 
 	return 0, "", fmt.Errorf("unrecognized measurement format %q", text)
