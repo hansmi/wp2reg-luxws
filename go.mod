@@ -3,7 +3,7 @@ module github.com/hansmi/wp2reg-luxws
 go 1.19
 
 require (
-	github.com/alecthomas/kingpin/v2 v2.3.2
+	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/go-kit/log v0.2.1
 	github.com/google/go-cmp v0.6.0
 	github.com/gorilla/websocket v1.5.1
