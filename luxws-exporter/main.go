@@ -10,8 +10,8 @@ import (
 	"github.com/hansmi/wp2reg-luxws/luxwslang"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/collectors/version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/common/version"
 	"github.com/prometheus/exporter-toolkit/web"
 
 	kitlog "github.com/go-kit/log"
