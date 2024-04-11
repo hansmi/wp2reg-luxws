@@ -8,6 +8,7 @@ func All() (result []*Terminology) {
 		Czech,
 		German,
 		English,
+		Finnish,
 		Dutch,
 	)
 }
