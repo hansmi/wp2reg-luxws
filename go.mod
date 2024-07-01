@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
 	github.com/go-kit/log v0.2.1
 	github.com/google/go-cmp v0.6.0
-	github.com/gorilla/websocket v1.5.1
+	github.com/gorilla/websocket v1.5.3
 	github.com/prometheus/client_golang v1.19.1
 	github.com/prometheus/exporter-toolkit v0.11.0
 	go.uber.org/multierr v1.11.0
