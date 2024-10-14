@@ -12,9 +12,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/collectors/version"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/prometheus/common/promslog"
+	promslogflag "github.com/prometheus/common/promslog/flag"
 	"github.com/prometheus/exporter-toolkit/web"
-
-	kitlog "github.com/go-kit/log"
 	webflag "github.com/prometheus/exporter-toolkit/web/kingpinflag"
 )
 
@@ -46,6 +46,9 @@ func supportedLanguages() []string {
 }
 
 func main() {
+	promslogConfig := &promslog.Config{}
+	promslogflag.AddFlags(kingpin.CommandLine, promslogConfig)
+
 	kingpin.Parse()
 
 	opts := collectorOpts{
@@ -90,7 +93,7 @@ func main() {
 			</html>`))
 	})
 
-	logger := kitlog.NewLogfmtLogger(kitlog.StdlibWriter{})
+	logger := promslog.New(promslogConfig)
 	server := &http.Server{}
 
 	if err := web.ListenAndServe(server, webConfig, logger); err != nil {
