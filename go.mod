@@ -13,7 +13,7 @@ require (
 	github.com/prometheus/exporter-toolkit v0.13.1
 	go.uber.org/multierr v1.11.0
 	golang.org/x/net v0.30.0
-	golang.org/x/sync v0.8.0
+	golang.org/x/sync v0.9.0
 )
 
 require (
