@@ -32,6 +32,12 @@ Pre-built binaries are provided for all [releases]:
 * Debian/Ubuntu (`.deb`)
 * RHEL/Fedora (`.rpm`)
 
+Docker images via GitHub's container registry:
+
+```shell
+docker pull ghcr.io/hansmi/luxws-exporter
+```
+
 ### Installation from the source code
 
 It's also possible to produce custom builds directly using [Go][golang] or
