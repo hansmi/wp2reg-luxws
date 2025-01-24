@@ -36,14 +36,14 @@ nfpms:
         dst: /usr/share/doc/luxws-exporter/LICENSE
 
 archives:
-  - format: tar.gz
+  - formats: tar.gz
     wrap_in_directory: true
     files:
       - LICENSE
       - README.md
     format_overrides:
       - goos: windows
-        format: zip
+        formats: zip
 
 changelog:
   groups:
