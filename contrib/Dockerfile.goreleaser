@@ -1,0 +1,15 @@
+FROM docker.io/library/alpine:latest
+
+RUN apk add --no-cache tzdata
+
+LABEL org.opencontainers.image.licenses=BSD-3-Clause
+LABEL org.opencontainers.image.description="Prometheus metrics for Luxtronik 2.x heat pump controllers"
+
+WORKDIR /
+
+COPY LICENSE README.md /
+COPY luxws-exporter /
+
+ENTRYPOINT ["/luxws-exporter"]
+
+# vim: set ft=dockerfile :
