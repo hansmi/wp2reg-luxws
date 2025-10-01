@@ -1,6 +1,6 @@
 module github.com/hansmi/wp2reg-luxws
 
-go 1.23.0
+go 1.24.0
 
 toolchain go1.24.1
 
@@ -13,7 +13,7 @@ require (
 	github.com/prometheus/exporter-toolkit v0.14.0
 	go.uber.org/multierr v1.11.0
 	golang.org/x/net v0.43.0
-	golang.org/x/sync v0.16.0
+	golang.org/x/sync v0.17.0
 )
 
 require (
