@@ -8,7 +8,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/prometheus/client_golang v1.24.1
 	github.com/prometheus/common v0.70.1
-	github.com/prometheus/exporter-toolkit v0.17.1
+	github.com/prometheus/exporter-toolkit v0.19.0
 	go.uber.org/multierr v1.11.0
 	golang.org/x/net v0.57.0
 	golang.org/x/sync v0.22.0
